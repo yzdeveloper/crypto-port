@@ -1,0 +1,50 @@
+// Fonts
+@import url('https://fonts.bunny.net/css?family=Nunito');
+
+// Variables
+@import 'variables';
+
+// Bootstrap
+@import 'bootstrap/scss/bootstrap';
+
+
+.PortfolioManager {
+    font-family: Arial, sans-serif;
+    margin: 20px;
+  }
+  
+  .header-buttons button {
+    margin-right: 10px;
+    padding: 10px 20px;
+    font-size: 16px;
+  }
+  
+  .investment-details {
+    display: flex;
+    justify-content: space-around;
+    margin-top: 20px;
+  }
+  
+  .details-box {
+    width: 220px;
+    padding: 20px;
+    border: 2px solid #ccc;
+    text-align: center;
+  }
+  
+  .portfolio-table {
+    width: 100%;
+    margin-top: 20px;
+    border-collapse: collapse;
+  }
+  
+  .portfolio-table th, .portfolio-table td {
+    padding: 12px;
+    border: 1px solid #ccc;
+    text-align: center;
+  }
+  
+  .portfolio-table th {
+    background-color: #f4f4f4;
+  }
+  
