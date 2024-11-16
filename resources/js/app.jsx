@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import ReactDOM from 'react-dom/client'; 
 
 /**
  * First we will load all of this project's JavaScript dependencies which
@@ -35,6 +36,16 @@ function App() {
   }
 
 
+  useEffect(() => {
+    fetch('/api/cash')
+      .then(cashStr => {
+        console.log(`cash: ${cashStr}`);
+        setCash(parseFloat(cashStr));
+      })
+      .catch(error => console.error('Error fetching data:', error));
+  }, []);
+
+
   // Fetch from the backend
   useEffect(() => {
     fetch('/api/load_portfolio')
@@ -62,3 +73,8 @@ function App() {
 }
 
 export default App;
+
+
+// Create a root container and render the App component into the DOM element with id "root"
+const root = ReactDOM.createRoot(document.getElementById('App')); // Get the element with id "root"
+root.render(<App />);  // Attach the App component to the root element

@@ -5,10 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Laravel</title>
     @viteReactRefresh 
-    @vite(['resources/sass/app.scss', 'resources/js/app.js'])
+    @vite(['resources/sass/app.scss', 'resources/js/app.jsx'])
   </head>
   <body class="antialiased">
-    <div id="user">
+    <div id="App">
     </div>
   </body>
 </html>
