@@ -4,15 +4,15 @@ const PortfolioPerformance = ({ invested, releasedPnL, unreleasedPnL }) => {
   return (
     <div className="portfolio-performance">
       <div className="details-box">
-        <h3>Invested</h3>
+        <h4>Invested</h4>
         <input type="text" value={invested} readOnly />
       </div>
       <div className="details-box">
-        <h3>Released PnL</h3>
+        <h4>Released PnL</h4>
         <input type="text" value={releasedPnL} readOnly />
       </div>
       <div className="details-box">
-        <h3>Unreleased PnL</h3>
+        <h4>Unreleased PnL</h4>
         <input type="text" value={unreleasedPnL} readOnly />
       </div>
     </div>
