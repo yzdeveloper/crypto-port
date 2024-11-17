@@ -21,4 +21,5 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 });
 
 
-Route::match(['get', 'post'], '/cash', [CashController::class, 'cash']);
+Route::match(['get'], '/cash', [CashController::class, 'cash']);
+Route::match(['post'], '/addCash', [CashController::class, 'addCash']);

@@ -4,99 +4,124 @@ import ActionButtons from './ActionButtons';
 import PortfolioPerformance from './PortfolioPerformance';
 import PortfolioTable from './PortfolioTable';
 
-
 function Portfolio() {
-  const [portfolio, setPortfolio] = useState([]);
-  const [cash, setCash] = useState(0.);
-  const [cashAdd, setCashAdd] = useState(0.);
+    const [portfolio, setPortfolio] = useState([]);
+    const [cash, setCash] = useState(0.);
+    const [cashAdd, setCashAdd] = useState(0.);
 
-  const [invested, setInvested] = useState(0);
-  const [releasedPnL, setReleasedPnL] = useState(0);
-  const [unreleasedPnL, setUnreleasedPnL] = useState(0);
+    const [invested, setInvested] = useState(0);
+    const [releasedPnL, setReleasedPnL] = useState(0);
+    const [unreleasedPnL, setUnreleasedPnL] = useState(0);
 
-  function getInvested(portfolio) {
-    let sum = 0.
-    for (inst of portfolio) {
-        sum += inst.buyPrice * inst.quantiry;
+    function getInvested(portfolio) {
+        let sum = 0.
+        for (inst of portfolio) {
+            sum += inst.buyPrice * inst.quantiry;
+        }
+
+        return sum;
     }
 
-    return sum;
-  }
+    function updateCash() {
+        useEffect(() => {
+            fetch('/api/cash')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(response.statusText);
+                    }
+
+                    return response.text();
+                })
+                .then(cashStr => {        
+                    setCash(parseFloat(cashStr));
+                })
+                .catch(error => console.error('Error fetching data:', error));
+        }, []);
+    }
+
+    updateCash();
 
 
-  useEffect(() => {
-    fetch('/api/cash')
+    // Fetch from the backend
+    useEffect(() => {
+        fetch('/api/load_portfolio')
+            .then(response => response.json())
+            .then(port => {
+                setPortfolio(port.porfolio);
+                setInvested(port.cash + getInvested(port.porfolio));
+                setReleasedPnL(port.releasedPnL);
+                setUnreleasedPnL(0);
+            })
+            .catch(error => console.error('Error fetching data:', error));
+    }, []);
+
+    function addCash(value) {
+        let v = Number(value);
+        if (isNaN(v)) {
+            console.log(`${value} is not a number`);
+        }
+
+        fetch(`/api/addCash?=${v}`)
         .then(response => {
             if (!response.ok) {
                 throw new Error(response.statusText);
             }
-
-            console.log(JSON.stringify(response));
-            return response.text();
         })
         .then(cashStr => {        
-            console.log(typeof cashStr)
-            console.log(`cash: ${cashStr} `);
             setCash(parseFloat(cashStr));
         })
         .catch(error => console.error('Error fetching data:', error));
-  }, []);
+    }
 
+    function onClickAdd() {
+        console.log('onClickAdd');
+        addCash(cashAdd);
+    }
 
-  // Fetch from the backend
-  useEffect(() => {
-    fetch('/api/load_portfolio')
-      .then(response => response.json())
-      .then(port => {
-        setPortfolio(port.porfolio);
-        setInvested(port.cash + getInvested(port.porfolio));
-        setReleasedPnL(port.releasedPnL);
-        setUnreleasedPnL(0);
-      })
-      .catch(error => console.error('Error fetching data:', error));
-  }, []);
+    function onClickWithdraw() {
+        console.log('onClickWithdraw');
+        addCash(-cashAdd);
+    }
 
-  function onClickAdd() {
-    console.log('onClickAdd');
-  }
+    return (
+        <div className='Portfolio'>
+            <div class='cashBox'>
+            <div class='horizontal'>
+                <label class='label'>Cash</label>
+                <input class='number-input' type='text' value={cash} readOnly />
+                <div class='bordered horizontal'>
+                    <input class='number-input' type='number' inputMode='decimal' 
+                        placeholder='0.0' step='0.01' min='0' value={cashAdd} 
+                        onInput={e => {
+                            let value = e.target.value;
+                            if (/^([0-9]+.?[0-9]{0,2})$/.test(value)) {
+                                if (/^(0[0-9]+.?[0-9]{0,2})$/.test(value)) {
+                                    value = value.substring(1);
+                                }
 
-  function onClickWithdraw() {
-    console.log('onClickWithdraw');
-  }
-
-  return (
-    <div className='Portfolio'>
-        <div class='cashBox'>
-          <div class='horizontal'>
-              <div class='label'>Cash</div>
-              <input class='number-input' type='text' value={cash} readOnly /> 
-              <input class='number-input' type='text' value={cashAdd} onInput={e => {
-                if (/^\d+(.\d*)*$/.test(e.target.value)) {
-                  setCashAdd(e.target.value)
-                  console.log(e.target.value);
-                }
-                else {
-                  e.stopPropagation();
-                }
-               } } 
-                title='Enter cash value to add or to withdraw.' />
-              <div class='vertical'> 
-                  <button class='cash-button' onClick={onClickAdd}>Add</button>
-                  <button  class='cash-button' onClick={onClickWithdraw}>Withdraw</button>
+                                setCashAdd(value)
+                            } else {
+                                e.stopPropagation();
+                            }
+                        } }  
+                        title='Enter cash value to add or to withdraw.' />
+                    <div class='vertical'> 
+                        <button class='cash-button' onClick={onClickAdd}>Add</button>
+                        <button  class='cash-button' onClick={onClickWithdraw}>Withdraw</button>
+                    </div>
+                </div>
             </div>
-          </div>
-        </div>  
-      <ActionButtons />
-      <PortfolioPerformance 
-        invested={invested} 
-        releasedPnL={releasedPnL} 
-        unreleasedPnL={0} 
-      />
-      <PortfolioTable data={portfolio} />
-    </div>
-  );
+            </div>  
+        <ActionButtons />
+        <PortfolioPerformance 
+            invested={invested} 
+            releasedPnL={releasedPnL} 
+            unreleasedPnL={0} 
+        />
+        <PortfolioTable data={portfolio} />
+        </div>
+    );
 }
-
 
 export default Portfolio;
 
