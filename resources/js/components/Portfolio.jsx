@@ -56,18 +56,35 @@ function Portfolio() {
       .catch(error => console.error('Error fetching data:', error));
   }, []);
 
+  function onClickAdd() {
+    console.log('onClickAdd');
+  }
+
+  function onClickWithdraw() {
+    console.log('onClickWithdraw');
+  }
+
   return (
     <div className='Portfolio'>
         <div class='cashBox'>
-            <div class='horizontal'>
-                <div class='horizontal'>Cash</div>
-                <input type="text" value={cash} readOnly />
-                <input type="text" value={cashAdd} />
-                <div class='vertical'>
-                    <button>Add</button>
-                    <button>Withdraw</button>
-                </div>
+          <div class='horizontal'>
+              <div class='label'>Cash</div>
+              <input class='number-input' type='text' value={cash} readOnly /> 
+              <input class='number-input' type='text' value={cashAdd} onInput={e => {
+                if (/^\d+(.\d*)*$/.test(e.target.value)) {
+                  setCashAdd(e.target.value)
+                  console.log(e.target.value);
+                }
+                else {
+                  e.stopPropagation();
+                }
+               } } 
+                title='Enter cash value to add or to withdraw.' />
+              <div class='vertical'> 
+                  <button class='cash-button' onClick={onClickAdd}>Add</button>
+                  <button  class='cash-button' onClick={onClickWithdraw}>Withdraw</button>
             </div>
+          </div>
         </div>  
       <ActionButtons />
       <PortfolioPerformance 

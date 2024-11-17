@@ -13,7 +13,7 @@ class CashControllerTest extends TestCase
      */
     public function test_example(): void
     {
-        $response = $this->get('/');
+        $response = $this->get('/cash');
 
         $response->assertStatus(200);
     }
