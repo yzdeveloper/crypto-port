@@ -55,31 +55,52 @@ function Portfolio() {
             .catch(error => console.error('Error fetching data:', error));
     }, []);
 
+    function normalize(value, after) {        
+        let groups= value.match(/^([+-]?)([0-9]+)(.[0-9]+)?$/);
+        if (groups) {
+            let minus = '';
+            if (groups[1] == '-') {
+                minus = '-';
+            }
+            
+            let three = '';
+            if (groups[3].length > 0) {
+                three = groups[3];
+            } 
+
+            three = three.padEnd(after, '0');
+
+            return `${minus}${groups[2]}${three}`;
+        }
+
+        return '0.00';
+    }
+
     function addCash(value) {
-        let v = Number(value);
-        if (isNaN(v)) {
+        if (isNaN(Number(value))) {
             console.log(`${value} is not a number`);
         }
 
-        fetch(`/api/addCash?=${v}`)
+        fetch(`/api/addCash?value=${value}`, {
+            method: 'POST' })
         .then(response => {
             if (!response.ok) {
                 throw new Error(response.statusText);
             }
+            return response.text();
         })
-        .then(cashStr => {        
-            setCash(parseFloat(cashStr));
+        .then(cashStr => {   
+            console.log(`cashStr=${cashStr}`);                 
+            setCash(normalize(cashStr, 2));
         })
         .catch(error => console.error('Error fetching data:', error));
     }
 
     function onClickAdd() {
-        console.log('onClickAdd');
         addCash(cashAdd);
     }
 
     function onClickWithdraw() {
-        console.log('onClickWithdraw');
         addCash(-cashAdd);
     }
 

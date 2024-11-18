@@ -11,8 +11,8 @@ use App\Models\Cash;
 
 class CashController extends Controller
 {    
-    private function returnCash(float $value) {
-        return response(strVal($value), 200)
+    private function returnCash(string $value) {
+        return response($value, 200)
             ->header('Content-Type', 'text/plain');            
     } 
 
@@ -25,7 +25,7 @@ class CashController extends Controller
         }
     }
 
-    private function getCash() {
+    private function getCash() : string {
         $tableName = 'cash';
         $cashValue = 0;
 
@@ -50,10 +50,10 @@ class CashController extends Controller
         }
 
         Log::debug('Cash returned:' . $cashValue);
-        return $cashValue;
+        return (string)$cashValue;
     }
 
-    private function saveCash($newCashvalue) {
+    private function saveCash(string $newCashvalue) {
         $cash = Cash::first();
         if ($cash === null) {
             Log::debug('saveCash: no cash record found.' );
@@ -61,41 +61,21 @@ class CashController extends Controller
 
         $cashToSave = $cash ?? new Cash();
         $cashToSave->value = $newCashvalue;
-
-        try{
-            $cashToSave->save();
-        }
-        catch (\PDOException $e) {
-            Log::error('saveCash: saving:' . $e->getMessage() );
-        }
-
-        Log::debug('saveCash: saved.' );
+        $cashToSave->save();
     }
 
-    private function convertToFloat($value)
-    {
-        // Attempt to convert to float
-        $floatValue = floatval($value);
-    
-        // Check if the result is a valid number
-        if (is_numeric($floatValue)) {
-            return $floatValue;
-        }
-    
-        // If not a valid float, handle the error
-        throw new InvalidArgumentException("The provided value is not a valid float: $value");
-    }
-
-    public function addCash(Request $request)
+     public function addCash(Request $request)
     {
         // Handle POST request 
         if ($request->isMethod('post')) {
-            $amountStr = $request->query('value');
-            Log::debug('addCash: $amountStr: ' . $amountStr);
-            $value = $this->convertToFloat($amountStr);
+            $amountStr = (string)$request->query('value');
+            if (!is_numeric($amountStr)) {
+                Log::debug('addCash: is not numeric: $amountStr: ' . $amountStr);
+                return response()->json(['message' => 'Invalid value:' . $amountStr ]);
+            }
+
             $oldCash = $this->getCash();
-            Log::debug('addCash: $oldCash: ' . $oldCash);
-            $newCash = $oldCash + $value;
+            $newCash = bcadd($oldCash,  $amountStr, 2);
             Log::debug('addCash: $newCash: ' . $newCash);
             $this->saveCash($newCash);             
             return $this->returnCash($newCash);

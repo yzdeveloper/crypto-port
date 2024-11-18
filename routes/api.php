@@ -4,6 +4,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 use App\Http\Controllers\CashController;
+use App\Http\Controllers\HoldingController;
 
 /*
 |--------------------------------------------------------------------------
@@ -16,10 +17,16 @@ use App\Http\Controllers\CashController;
 |
 */
 
-Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
-    return $request->user();
-});
-
-
 Route::match(['get'], '/cash', [CashController::class, 'cash']);
 Route::match(['post'], '/addCash', [CashController::class, 'addCash']);
+
+Route::prefix('holdings')->group(function () {
+    // Get holdings with optional filtering and sorting
+    Route::get('/', [HoldingController::class, 'get']);
+    
+    // Update purchase quantity and price (bought
+    Route::post('/bought', [HoldingController::class, 'bought']);
+    
+    // Update sell quantity and price (sold)
+    Route::post('/sold', [HoldingController::class, 'sold']);
+});
