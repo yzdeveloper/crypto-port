@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Log;
 use App\Models\Cash;
 
 class CashController extends Controller
@@ -19,9 +20,8 @@ class CashController extends Controller
         $databasePath = env('DB_DATABASE', database_path('database.sqlite'));
    
         if (!File::exists($databasePath)) {
-            // Optionally, create an empty database file if it doesn't exist
             File::put($databasePath, '');    
-            echo "Database created and migrations ran successfully.";
+            Log::debug('Database created: ' . $databasePath);
         }
     }
 
@@ -33,6 +33,7 @@ class CashController extends Controller
         if (! Schema::hasTable($tableName)) {
             Schema::create($tableName, 
                 function ($table) {
+                    $table->id();
                     $table->decimal('value', 25, 2);  
                     $table->timestamps();  
                 });
@@ -43,18 +44,32 @@ class CashController extends Controller
             $cash = new Cash();
             $cash->value = $cashValue;
             $cash->save();
+            Log::debug('Cash record saved...');
         } else {
             $cashValue = $cash->value;
         }
 
+        Log::debug('Cash returned:' . $cashValue);
         return $cashValue;
     }
 
     private function saveCash($newCashvalue) {
         $cash = Cash::first();
+        if ($cash === null) {
+            Log::debug('saveCash: no cash record found.' );
+        }
+
         $cashToSave = $cash ?? new Cash();
         $cashToSave->value = $newCashvalue;
-        $cashToSave->save();
+
+        try{
+            $cashToSave->save();
+        }
+        catch (\PDOException $e) {
+            Log::error('saveCash: saving:' . $e->getMessage() );
+        }
+
+        Log::debug('saveCash: saved.' );
     }
 
     private function convertToFloat($value)
@@ -76,9 +91,12 @@ class CashController extends Controller
         // Handle POST request 
         if ($request->isMethod('post')) {
             $amountStr = $request->query('value');
+            Log::debug('addCash: $amountStr: ' . $amountStr);
             $value = $this->convertToFloat($amountStr);
             $oldCash = $this->getCash();
+            Log::debug('addCash: $oldCash: ' . $oldCash);
             $newCash = $oldCash + $value;
+            Log::debug('addCash: $newCash: ' . $newCash);
             $this->saveCash($newCash);             
             return $this->returnCash($newCash);
         }

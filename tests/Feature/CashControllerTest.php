@@ -4,7 +4,9 @@ namespace Tests\Feature;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Foundation\Testing\WithFaker;
+use Illuminate\Support\Facades\Log;
 use Tests\TestCase;
+use Exception;
 
 class CashControllerTest extends TestCase
 {
@@ -13,7 +15,6 @@ class CashControllerTest extends TestCase
         $response = $this->get('/api/cash');
         $response->assertStatus(200);
         $content = $response->getContent();
-        error_log('Content:' . $content);
         $contentValue = floatval($content);
         $this->assertTrue(is_numeric($contentValue), 'Should return numeric value');
     }
@@ -44,7 +45,9 @@ class CashControllerTest extends TestCase
         $this->assertEquals($addedValue, $savedAddedValue);
 
         // Withdraw 10.10
-        $response = $this->post('/api/addCash?vaue=' . (-$addition));
+        $url = '/api/addCash?vaue=-' . (-$addition);
+        Log::debug('Url: ' . $url);
+        $response = $this->post($url);
         $response->assertStatus(200);
         $content = $response->getContent();
         $substractedValue = floatval($content);
