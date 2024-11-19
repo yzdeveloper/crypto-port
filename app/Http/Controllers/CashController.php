@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
+use App\Database\PortfolioDB;
 use App\Models\Cash;
 
 class CashController extends Controller
@@ -16,29 +17,11 @@ class CashController extends Controller
             ->header('Content-Type', 'text/plain');            
     } 
 
-    private function createDatabaseIfNotExists() {
-        $databasePath = env('DB_DATABASE', database_path('database.sqlite'));
-   
-        if (!File::exists($databasePath)) {
-            File::put($databasePath, '');    
-            Log::debug('Database created: ' . $databasePath);
-        }
-    }
 
     private function getCash() : string {
-        $tableName = 'cash';
         $cashValue = 0;
-
-        $this->createDatabaseIfNotExists();
-        if (! Schema::hasTable($tableName)) {
-            Schema::create($tableName, 
-                function ($table) {
-                    $table->id();
-                    $table->decimal('value', 25, 2);  
-                    $table->timestamps();  
-                });
-        }
         
+        PortfolioDB::ensureDB();
         $cash = Cash::first();
         if ($cash === null) {
             $cash = new Cash();

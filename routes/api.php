@@ -25,8 +25,8 @@ Route::prefix('holdings')->group(function () {
     Route::get('/', [HoldingController::class, 'get']);
     
     // Update purchase quantity and price (bought
-    Route::post('/bought', [HoldingController::class, 'bought']);
+    Route::put('/bought', [HoldingController::class, 'bought']);
     
     // Update sell quantity and price (sold)
-    Route::post('/sold', [HoldingController::class, 'sold']);
+    Route::put('/sold', [HoldingController::class, 'sold']);
 });

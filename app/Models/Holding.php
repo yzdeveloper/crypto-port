@@ -15,6 +15,8 @@ class Holding extends Model
     // Fillable fields to allow mass assignment
     protected $fillable = [
         'instrument',
+        'instrument_first',
+        'instrument_second',
         'purchase_quantity',
         'purchase_price',
         'sell_quantity',
@@ -28,18 +30,5 @@ class Holding extends Model
         'sell_quantity' => 'decimal:9',
         'selling_price' => 'decimal:9',
     ];
-
-    public function up()
-    {
-        Schema::create('holdings', function ($table) {
-            $table->id();
-            $table->string('instrument'); 
-            $table->decimal('purchase_quantity', 60, 9)->nullable(); 
-            $table->decimal('purchase_price', 60, 9)->nullable(); 
-            $table->decimal('sell_quantity', 60, 9)->nullable(); 
-            $table->decimal('selling_price', 60, 9)->nullable(); 
-            $table->timestamps(); // created_at, updated_at
-        });
-    }    
 }
 

@@ -2,77 +2,96 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Holding;
 use Illuminate\Http\Request;
-
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use App\Database\PortfolioDB;
+use App\Models\Holding;
 
 class HoldingController extends Controller
 {
     public function get(Request $request)
     {
+        PortfolioDB::ensureDB();
         $query = Holding::query();
 
-        // Filtering by instrument (optional)
-        if ($request->has('instrument')) {
-            $query->where('instrument', $request->input('instrument'));
+        // Filtering  (optional)  
+        $instrument_search = $request->query('instrument');
+        if (!is_null($instrument_search)) {
+            $query->where('instrument', 'like', '%' . $instrument_search . '%');
         }
 
-        // Sorting by instrument (optional)
-        if ($request->has('sort_by')) {
-            $sortDirection = $request->input('sort_direction', 'asc'); // Default sorting direction is ascending
-            $query->orderBy($request->input('sort_by'), $sortDirection);
+        // Sorting  (optional)
+        $sorting = [];
+        foreach($request->query() as $key => $value) {
+            if (str_starts_with($key, 'sort_by')) {
+                $splitted = explode('|', $value);
+                $column = $splitted[0];
+                $order = count($splitted) > 1 ? $splitted[1] : 'asc';
+                if (PortfolioDB::column_exist('holdings', $column)) {
+                    $sorting[] = [ $column, (strcasecmp($order, 'desc') == 1 ? 'desc' : 'asc')  ];
+                }
+            }
         }
 
-        // Paginate the results (you can adjust the per page count)
-        $holdings = $query->paginate(15);
+        foreach($sorting as [$column, $order]) {
+            $query->orderBy($column, $order);
+        }
 
-        return response()->json($holdings);
+        $query->select( [ 
+            'instrument', 
+            DB::raw('(SUM(purchase_quantity) - SUM(sold_quantity)) as quantity'), 
+            DB::raw('( (SUM(purchase_quantity*purchase_price) - SUM(sold_quantity*sold_price)) / (SUM(purchase_quantity) - SUM(sold_quantity))) as price'
+        )]);
+        $query->groupBy('instrument');
+
+        Log::debug('SQL:' . $query->toSql());
+        return response()->json($query->get());
     }
 
-    // Update purchase quantity and price (bought)
     public function bought(Request $request)
     {
+        PortfolioDB::ensureDB();
         $request->validate([
-            'purchase_quantity' => 'nullable|numeric',
-            'purchase_price' => 'nullable|numeric',
+            'instrument' => 'required|string',
+            'purchase_quantity' => 'required|numeric',
+            'purchase_price' => 'required|numeric',
         ]);
 
-        $holding = Holding::findOrFail($id);
-        
-        // Update purchase fields
-        if ($request->has('purchase_quantity')) {
-            $holding->purchase_quantity = $request->input('purchase_quantity');
-        }
-        if ($request->has('purchase_price')) {
-            $holding->purchase_price = $request->input('purchase_price');
-        }
-
-        $holding->save();
-
-        return response()->json($holding);
-    }
-
-    // Update sell quantity and price (sold)
-    public function sold(Request $request)
-    {
-        $request->validate([
-            'instrument' => '|string',
-            'sell_quantity' => 'nullable|numeric',
-            'selling_price' => 'nullable|numeric',
-        ]);
+        $instrument = $request->input('instrument');
+        [ $first, $second ] = getFirstSecond($instrument);
 
         $holding = new Holding();
-
-        // Update sell fields
-        if ($request->has('sell_quantity')) {
-            $holding->sell_quantity = $request->input('sell_quantity');
-        }
-        if ($request->has('selling_price')) {
-            $holding->selling_price = $request->input('selling_price');
-        }
-
+        $holding->instrument = $request->input('instrument');
+        $holding->instrument_first = $first; 
+        $holding->instrument_second = $second; 
+        $holding->purchase_quantity = $request->input('purchase_quantity');
+        $holding->purchase_price = $request->input('purchase_price');        
         $holding->save();
+    }
 
-        return response()->json($holding);
+    private function getFirstSecond(string $instrument) {
+        return explode('-', $instrument);
+    }
+
+    public function sold(Request $request)
+    {
+        PortfolioDB::ensureDB();
+        $request->validate([
+            'instrument' => 'required|string',
+            'sell_quantity' => 'required|numeric',
+            'selling_price' => 'required|numeric',
+        ]);
+
+        $instrument = $request->input('instrument');
+        [ $first, $second ] = getFirstSecond($instrument);
+
+        $holding = new Holding();
+        $holding->instrument = $instrument; 
+        $holding->instrument_first = $first; 
+        $holding->instrument_second = $second; 
+        $holding->sell_quantity = $request->input('sold_quantity');
+        $holding->selling_price = $request->input('sold_price');
+        $holding->save();
     }
 }
