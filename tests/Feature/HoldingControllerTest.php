@@ -2,13 +2,13 @@
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Log;
+use App\Database\PortfolioDB;
 use App\Models\Holding;
 use Tests\TestCase;
 
 class HoldingControllerTest extends TestCase
 {
     use RefreshDatabase;
-
 
     public function setUp(): void
     {
@@ -19,28 +19,33 @@ class HoldingControllerTest extends TestCase
     /** @test */
     public function it_returns_holdings_with_optional_filters_and_sorting()
     {
-        // Create some test data
+        // Given
         Holding::create([
             'instrument' => 'AAPL-US',
-            'purchase_quantity' => 100,
-            'purchase_price' => 150,
-            'sold_quantity' => 50,
-            'sold_price' => 160,
+            'instrument_first' => 'AAPL',
+            'instrument_second' => 'US',
+            'quantity' => 100,
+            'price' => 150,
         ]);
         Holding::create([
             'instrument' => 'GOOG-US',
-            'purchase_quantity' => 200,
-            'purchase_price' => 1000,
-            'sold_quantity' => 100,
-            'sold_price' => 1200,
+            'instrument_first' => 'GOOG',
+            'instrument_second' => 'US',
+            'quantity' => 200,
+            'price' => 1000,
         ]);
 
-        // Test filtering
+        // When-Then
+        $response = $this->getJson('/api/holdings');
+        $response->assertStatus(200);
+        $response->assertJsonCount(2); // All records returned
+
+        // When filtering-Then
         $response = $this->getJson('/api/holdings?instrument=AAPL');
         $response->assertStatus(200);
         $response->assertJsonCount(1); // Ensure only 1 result for AAPL
 
-        // Test sorting by instrument
+        // When sorting by instrument-Then
         $response = $this->getJson('/api/holdings?sort_by_instrument=instrument|desc');
         $response->assertStatus(200);
         $response->assertJsonFragment(['instrument' => 'GOOG-US']);
@@ -48,20 +53,12 @@ class HoldingControllerTest extends TestCase
     }
 
     /** @test */
-    public function it_handles_empty_filter_gracefully()
-    {
-        $response = $this->getJson('/api/holdings');
-        $response->assertStatus(200);
-        $response->assertJsonCount(2); // All records returned
-    }
-
-    /** @test */
     public function it_creates_a_new_holding_when_valid_data_is_provided()
     {
         $data = [
             'instrument' => 'AAPL-US',
-            'purchase_quantity' => 50,
-            'purchase_price' => 150,
+            'quantity' => 50,
+            'price' => 150,
         ];
 
         $response = $this->postJson('/api/holdings/bought', $data);
@@ -71,8 +68,8 @@ class HoldingControllerTest extends TestCase
 
         $this->assertDatabaseHas('holdings', [
             'instrument' => 'AAPL-US',
-            'purchase_quantity' => 50,
-            'purchase_price' => 150,
+            'quantity' => 50,
+            'price' => 150,
         ]);
     }
 
@@ -81,29 +78,76 @@ class HoldingControllerTest extends TestCase
     {
         $data = [
             'instrument' => 'AAPL-US',
-            'purchase_quantity' => 50,
+            'quantity' => 50,
         ];
 
         $response = $this->postJson('/api/holdings/bought', $data);
         $response->assertStatus(422); // Unprocessable Entity due to validation failure
-        $response->assertJsonValidationErrors(['purchase_price']);
+        $response->assertJsonValidationErrors(['price']);
+    }
+
+    /** @test */
+    public function it_updates_the_holding_when_new_purchase_data_is_provided()
+    {
+        // Given
+        Holding::create([
+            'instrument' => 'AAPL-US',
+            'instrument_first' => 'AAPL',
+            'instrument_second' => 'US',
+            'quantity' => 100,
+            'price' => 150,
+        ]);
+        Holding::create([
+            'instrument' => 'GOOG-US',
+            'instrument_first' => 'GOOG',
+            'instrument_second' => 'US',
+            'quantity' => 200,
+            'price' => 1000,
+        ]);
+
+        $data = [
+            'instrument' => 'AAPL-US',
+            'quantity' => 30,
+            'price' => 100,
+        ];
+
+        // (100*150+30*100)/ 150 => (15000 + 3000)/150 => 18000/150 => 120
+
+        // When
+        $response = $this->postJson('/api/holdings/bought', $data);
+        
+        // Then
+        $response->assertStatus(200);
+        $response->assertJson(['message' => 'Holding updated successfully']);
+
+        $holding->refresh();
+        $this->assertEquals(300, $holding->quantity); 
+        $this->assertEquals(120, $holding->price); 
     }
 
     /** @test */
     public function it_updates_the_holding_when_sold_data_is_provided()
     {
-        $holding = Holding::create([
+        // Given
+        Holding::create([
             'instrument' => 'AAPL-US',
-            'purchase_quantity' => 100,
-            'purchase_price' => 150,
-            'sold_quantity' => 0,
-            'sold_price' => 0,
+            'instrument_first' => 'AAPL',
+            'instrument_second' => 'US',
+            'quantity' => 100,
+            'price' => 150,
+        ]);
+        Holding::create([
+            'instrument' => 'GOOG-US',
+            'instrument_first' => 'GOOG',
+            'instrument_second' => 'US',
+            'quantity' => 200,
+            'price' => 1000,
         ]);
 
         $data = [
             'instrument' => 'AAPL-US',
-            'sell_quantity' => 50,
-            'selling_price' => 160,
+            'sold_quantity' => 50,
+            'sold_price' => 160,
         ];
 
         $response = $this->postJson('/api/holdings/sold', $data);

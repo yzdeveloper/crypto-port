@@ -17,7 +17,6 @@ class CashController extends Controller
             ->header('Content-Type', 'text/plain');            
     } 
 
-
     private function getCash() : string {
         $cashValue = 0;
         
@@ -54,17 +53,22 @@ class CashController extends Controller
             $amountStr = (string)$request->query('value');
             if (!is_numeric($amountStr)) {
                 Log::debug('addCash: is not numeric: $amountStr: ' . $amountStr);
-                return response()->json(['message' => 'Invalid value:' . $amountStr ]);
+                return response()->json(['message' => 'Invalid value:' . $amountStr ], 400);
             }
 
             $oldCash = $this->getCash();
             $newCash = bcadd($oldCash,  $amountStr, 2);
+            if ($newCash < 0) {
+                Log::debug('addCash: is not numeric: $amountStr: ' . $amountStr);
+                return response()->json(['message' => 'Result cash should be positive' ], 400);
+            }
+
             Log::debug('addCash: $newCash: ' . $newCash);
             $this->saveCash($newCash);             
             return $this->returnCash($newCash);
         }
 
-        return response()->json(['message' => 'Invalid request method.']);
+        return response()->json(['message' => 'Invalid request method.'], 405);
     }
 
     public function cash(Request $request)
@@ -74,7 +78,7 @@ class CashController extends Controller
             return $this->returnCash($cashValue);
         }
 
-        return response()->json(['message' => 'Invalid request method.']);
+        return response()->json(['message' => 'Invalid request method.'], 405);
     }
 
 }

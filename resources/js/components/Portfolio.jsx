@@ -5,14 +5,17 @@ import PortfolioPerformance from './PortfolioPerformance';
 import PortfolioTable from './PortfolioTable';
 
 function Portfolio() {
+    // cash
     const [portfolio, setPortfolio] = useState([]);
     const [cash, setCash] = useState(0.);
     const [cashAdd, setCashAdd] = useState(0.);
 
+    // performance
     const [invested, setInvested] = useState(0);
     const [releasedPnL, setReleasedPnL] = useState(0);
     const [unreleasedPnL, setUnreleasedPnL] = useState(0);
 
+    
     function getInvested(portfolio) {
         let sum = 0.
         for (inst of portfolio) {
@@ -106,40 +109,49 @@ function Portfolio() {
 
     return (
         <div className='Portfolio'>
-            <div class='cashBox'>
-            <div class='horizontal'>
-                <label class='label'>Cash</label>
-                <input class='number-input' type='text' value={cash} readOnly />
-                <div class='bordered horizontal'>
-                    <input class='number-input' type='number' inputMode='decimal' 
-                        placeholder='0.0' step='0.01' min='0' value={cashAdd} 
-                        onInput={e => {
-                            let value = e.target.value;
-                            if (/^([0-9]+.?[0-9]{0,2})$/.test(value)) {
-                                if (/^(0[0-9]+.?[0-9]{0,2})$/.test(value)) {
-                                    value = value.substring(1);
-                                }
+            <div class='box'>
+                <div class='horizontal'>
+                    <label class='label'>Cash</label>
+                    <input class='number-input' type='text' value={cash} readOnly />
+                    <div class='bordered horizontal'>
+                        <input class='number-input' type='number' inputMode='decimal' 
+                            placeholder='0.0' step='0.01' min='0' value={cashAdd} 
+                            onInput={e => {
+                                let value = e.target.value;
+                                if (/^([0-9]+.?[0-9]{0,2})$/.test(value)) {
+                                    if (/^(0[0-9]+.?[0-9]{0,2})$/.test(value)) {
+                                        value = value.substring(1);
+                                    }
 
-                                setCashAdd(value)
-                            } else {
-                                e.stopPropagation();
-                            }
-                        } }  
-                        title='Enter cash value to add or to withdraw.' />
-                    <div class='vertical'> 
-                        <button class='cash-button' onClick={onClickAdd}>Add</button>
-                        <button  class='cash-button' onClick={onClickWithdraw}>Withdraw</button>
+                                    setCashAdd(value)
+                                } else {
+                                    e.stopPropagation();
+                                }
+                            } }  
+                            title='Enter cash value to add or to withdraw.' />
+                        <div class='vertical'> 
+                            <button class='cash-button' onClick={onClickAdd}>Add</button>
+                            <button  class='cash-button' onClick={onClickWithdraw}>Withdraw</button>
+                        </div>
                     </div>
                 </div>
             </div>
-            </div>  
-        <ActionButtons />
-        <PortfolioPerformance 
-            invested={invested} 
-            releasedPnL={releasedPnL} 
-            unreleasedPnL={0} 
-        />
-        <PortfolioTable data={portfolio} />
+            <div className='box horizontal'>
+                <div className='vertical'>
+                    <label>Invested</label>
+                    <input type="text" value={invested} readOnly />
+                </div>
+                <div className='vertical'>
+                    <label>Released PnL</label>
+                    <h4>Released PnL</h4>
+                    <input type="text" value={releasedPnL} readOnly />
+                </div>
+                <div className='vertical'>
+                    <label>Unreleased PnL</label>
+                    <input type="text" value={unreleasedPnL} readOnly />
+                </div>
+            </div>
+            <PortfolioTable data={portfolio} />
         </div>
     );
 }

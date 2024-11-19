@@ -40,7 +40,21 @@ class HoldingController extends Controller
 
         $query->select( [ 
             'instrument', 
-            DB::raw('(SUM(purchase_quantity) - SUM(sold_quantity)) as quantity'), 
+            'quantity',
+            'price'
+        ]);
+
+        Log::debug('SQL:' . $query->toSql());
+        return response()->json($query->get());
+    }
+
+
+    public function getReleasedPnl(Request $request)
+    {
+        PortfolioDB::ensureDB();
+        $query = Holding::query();
+
+        $query->select( [ 
             DB::raw('( (SUM(purchase_quantity*purchase_price) - SUM(sold_quantity*sold_price)) / (SUM(purchase_quantity) - SUM(sold_quantity))) as price'
         )]);
         $query->groupBy('instrument');
@@ -54,19 +68,30 @@ class HoldingController extends Controller
         PortfolioDB::ensureDB();
         $request->validate([
             'instrument' => 'required|string',
-            'purchase_quantity' => 'required|numeric',
-            'purchase_price' => 'required|numeric',
+            'quantity' => 'required|numeric',
+            'price' => 'required|numeric',
         ]);
 
         $instrument = $request->input('instrument');
+
+        $existing_instrument = Holding::query()->where('instrument', $instrument)->get();
+        Log::debug('$existing_instrument=' . print_r($existing_instrument, true) );
+
+        // Filtering  (optional)  
+        $instrument_search = $request->query('instrument');
+        if (!is_null($instrument_search)) {
+            $query->where('instrument', 'like', '%' . $instrument_search . '%');
+        }
+
+
         [ $first, $second ] = getFirstSecond($instrument);
 
         $holding = new Holding();
         $holding->instrument = $request->input('instrument');
         $holding->instrument_first = $first; 
         $holding->instrument_second = $second; 
-        $holding->purchase_quantity = $request->input('purchase_quantity');
-        $holding->purchase_price = $request->input('purchase_price');        
+        $holding->quantity = $request->input('purchase_quantity');
+        $holding->price = $request->input('purchase_price');        
         $holding->save();
     }
 
@@ -77,20 +102,28 @@ class HoldingController extends Controller
     public function sold(Request $request)
     {
         PortfolioDB::ensureDB();
+
         $request->validate([
             'instrument' => 'required|string',
-            'sell_quantity' => 'required|numeric',
-            'selling_price' => 'required|numeric',
+            'sold_quantity' => 'required|numeric',
+            'sold_price' => 'required|numeric',
         ]);
 
         $instrument = $request->input('instrument');
+
+        $quantity = $request->input('sold_quantity');
+        $quantity_own = getInstrumentQuantity($instrument);
+        if ($quantity_own < $quantity) {
+            return response()->json(['message' => 'Invalid quantity:' . $quantity ], 400);            
+        }
+
         [ $first, $second ] = getFirstSecond($instrument);
 
         $holding = new Holding();
         $holding->instrument = $instrument; 
         $holding->instrument_first = $first; 
         $holding->instrument_second = $second; 
-        $holding->sell_quantity = $request->input('sold_quantity');
+        $holding->sell_quantity = $quantity; 
         $holding->selling_price = $request->input('sold_price');
         $holding->save();
     }

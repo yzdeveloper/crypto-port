@@ -33,13 +33,11 @@ class PortfolioDB
         if (! Schema::hasTable('holdings')) {
             Schema::create('holdings', function ($table) {
                 $table->id();
-                $table->string('instrument'); 
+                $table->string('instrument')->unique(); 
                 $table->string('instrument_first'); 
                 $table->string('instrument_second'); 
-                $table->decimal('purchase_quantity', 60, 9)->nullable(); 
-                $table->decimal('purchase_price', 60, 9)->nullable(); 
-                $table->decimal('sold_quantity', 60, 9)->nullable(); 
-                $table->decimal('sold_price', 60, 9)->nullable(); 
+                $table->decimal('quantity', 60, 9); 
+                $table->decimal('price', 60, 9); 
                 $table->timestamps(); // created_at, updated_at
                 });
         }    

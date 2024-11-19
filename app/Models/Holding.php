@@ -17,18 +17,14 @@ class Holding extends Model
         'instrument',
         'instrument_first',
         'instrument_second',
-        'purchase_quantity',
-        'purchase_price',
-        'sell_quantity',
-        'selling_price',
+        'quantity',
+        'price',
     ];
 
     // Cast decimals properly
     protected $casts = [
-        'purchase_quantity' => 'decimal:9',
-        'purchase_price' => 'decimal:9',
-        'sell_quantity' => 'decimal:9',
-        'selling_price' => 'decimal:9',
+        'quantity' => 'decimal:64',
+        'price' => 'decimal:64',
     ];
 }
 
