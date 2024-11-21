@@ -15,16 +15,14 @@ class Holding extends Model
     // Fillable fields to allow mass assignment
     protected $fillable = [
         'instrument',
-        'instrument_first',
-        'instrument_second',
         'quantity',
         'price',
     ];
 
     // Cast decimals properly
     protected $casts = [
-        'quantity' => 'decimal:64',
-        'price' => 'decimal:64',
+        'quantity' => 'decimal:9',
+        'price' => 'decimal:9',
     ];
 }
 

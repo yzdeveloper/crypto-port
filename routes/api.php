@@ -30,3 +30,5 @@ Route::prefix('holdings')->group(function () {
     // Update sell quantity and price (sold)
     Route::put('/sold', [HoldingController::class, 'sold']);
 });
+
+Route::match(['get'], '/pnl', [HoldingController::class, 'getReleasedPnl']);

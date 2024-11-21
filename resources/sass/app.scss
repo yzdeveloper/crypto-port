@@ -29,11 +29,26 @@
   flex-direction: column; 
 }
 
+.width {
+  width: 100%;
+  padding: 5px;
+}
+
+
+.centered {
+  justify-self: center;
+  align-self: center;  
+}
+
 .label {
   margin: 5px;
   margin-right: 10px;
   text-align: center;
   align-self: center;
+}
+
+.right-margin {
+  margin-right: 10px;
 }
 
 .number-input {
@@ -45,7 +60,7 @@
   min-width: 100px;
 }
 
-.cash-button {
+.buttons {
   margin: 1px;
   border: 1px solid #ccc;
   border-radius: 4px;

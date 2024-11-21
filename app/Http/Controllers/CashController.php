@@ -46,7 +46,19 @@ class CashController extends Controller
         $cashToSave->save();
     }
 
-     public function addCash(Request $request)
+    public function addCashImpl($value) {
+        $oldCash = $this->getCash();
+        $newCash = bcadd($oldCash,  $value, 2);
+        if ($newCash < 0) {
+            return $oldCash;
+        }
+
+        Log::debug('addCash: $newCash: ' . $newCash);
+        $this->saveCash($newCash);  
+        return $newCash;           
+    }
+
+    public function addCash(Request $request)
     {
         // Handle POST request 
         if ($request->isMethod('post')) {
@@ -56,15 +68,12 @@ class CashController extends Controller
                 return response()->json(['message' => 'Invalid value:' . $amountStr ], 400);
             }
 
-            $oldCash = $this->getCash();
-            $newCash = bcadd($oldCash,  $amountStr, 2);
+            $newCash = $this->addCashImpl($amountStr);
             if ($newCash < 0) {
                 Log::debug('addCash: is not numeric: $amountStr: ' . $amountStr);
                 return response()->json(['message' => 'Result cash should be positive' ], 400);
             }
-
-            Log::debug('addCash: $newCash: ' . $newCash);
-            $this->saveCash($newCash);             
+    
             return $this->returnCash($newCash);
         }
 

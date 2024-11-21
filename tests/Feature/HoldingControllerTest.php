@@ -4,6 +4,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Log;
 use App\Database\PortfolioDB;
 use App\Models\Holding;
+use App\Models\Pnl;
 use Tests\TestCase;
 
 class HoldingControllerTest extends TestCase
@@ -55,16 +56,18 @@ class HoldingControllerTest extends TestCase
     /** @test */
     public function it_creates_a_new_holding_when_valid_data_is_provided()
     {
+        // Given
         $data = [
             'instrument' => 'AAPL-US',
             'quantity' => 50,
             'price' => 150,
         ];
 
-        $response = $this->postJson('/api/holdings/bought', $data);
+        // When
+        $response = $this->putJson('/api/holdings/bought', $data);
 
-        $response->assertStatus(201); // Expecting created status
-        $response->assertJson(['message' => 'Holding created successfully']);
+        // Then
+        $response->assertStatus(200); 
 
         $this->assertDatabaseHas('holdings', [
             'instrument' => 'AAPL-US',
@@ -74,15 +77,15 @@ class HoldingControllerTest extends TestCase
     }
 
     /** @test */
-    public function it_validates_the_request_when_data_is_missing()
+    public function it_validates_the_request_when_price_is_missing()
     {
         $data = [
             'instrument' => 'AAPL-US',
             'quantity' => 50,
         ];
 
-        $response = $this->postJson('/api/holdings/bought', $data);
-        $response->assertStatus(422); // Unprocessable Entity due to validation failure
+        $response = $this->putJson('/api/holdings/bought', $data);
+        $response->assertStatus(422); 
         $response->assertJsonValidationErrors(['price']);
     }
 
@@ -90,7 +93,7 @@ class HoldingControllerTest extends TestCase
     public function it_updates_the_holding_when_new_purchase_data_is_provided()
     {
         // Given
-        Holding::create([
+        $holding = Holding::create([
             'instrument' => 'AAPL-US',
             'instrument_first' => 'AAPL',
             'instrument_second' => 'US',
@@ -107,29 +110,32 @@ class HoldingControllerTest extends TestCase
 
         $data = [
             'instrument' => 'AAPL-US',
-            'quantity' => 30,
-            'price' => 100,
+            'quantity' => 300,
+            'price' => 110,
         ];
 
-        // (100*150+30*100)/ 150 => (15000 + 3000)/150 => 18000/150 => 120
+        // (100*150+300*110)/ 400 => (15000 + 33000)/400 => 48000/400 => 120
 
         // When
-        $response = $this->postJson('/api/holdings/bought', $data);
+        $response = $this->putJson('/api/holdings/bought', $data);
         
         // Then
         $response->assertStatus(200);
-        $response->assertJson(['message' => 'Holding updated successfully']);
 
         $holding->refresh();
-        $this->assertEquals(300, $holding->quantity); 
-        $this->assertEquals(120, $holding->price); 
+        $this->assertEquals(0, bccomp(400, $holding->quantity, 9), 0, $holding->quantity . ' is not 400'); 
+        $this->assertEquals(0, bccomp(120, $holding->price, 9), 0, $holding->price . ' is not 120'); 
     }
 
     /** @test */
     public function it_updates_the_holding_when_sold_data_is_provided()
     {
         // Given
-        Holding::create([
+        $pnl = Pnl::query()->first();
+        $old_pnl = is_null($pnl) ? '0' : $pnl->value; 
+        $expected_pnl = bcadd($old_pnl, 500); // 50 * (160 - 150) = 500
+
+        $holding = Holding::create([
             'instrument' => 'AAPL-US',
             'instrument_first' => 'AAPL',
             'instrument_second' => 'US',
@@ -146,17 +152,23 @@ class HoldingControllerTest extends TestCase
 
         $data = [
             'instrument' => 'AAPL-US',
-            'sold_quantity' => 50,
-            'sold_price' => 160,
+            'quantity' => 50,
+            'price' => 160,
         ];
 
-        $response = $this->postJson('/api/holdings/sold', $data);
+        // When
+        $response = $this->putJson('/api/holdings/sold', $data);
+
+        // Then
         $response->assertStatus(200);
-        $response->assertJson(['message' => 'Holding updated successfully']);
 
         $holding->refresh();
-        $this->assertEquals(50, $holding->sold_quantity); // Verify the sold quantity has been updated
-        $this->assertEquals(160, $holding->selling_price); // Verify the selling price is set
+        $this->assertEquals(0, bccomp(50, $holding->quantity, 9), $holding->quantity . ' is not 50'); 
+        $this->assertEquals(0, bccomp(150, $holding->price, 9), $holding->price . ' is not 150'); 
+
+        // bonus: checking PnL updated
+        $pnl = Pnl::query()->first();
+        $this->assertEquals(0, bccomp($expected_pnl, $pnl->value, 9), 'Expected pnl is ' . $expected_pnl . ' but it is ' . $pnl->value); 
     }
 
     /** @test */
@@ -164,11 +176,11 @@ class HoldingControllerTest extends TestCase
     {
         $data = [
             'instrument' => 'AAPL-US',
-            'sell_quantity' => 50,
+            'quantity' => 50,
         ];
 
-        $response = $this->postJson('/api/holdings/sold', $data);
-        $response->assertStatus(422); // Expecting validation error for missing selling price
-        $response->assertJsonValidationErrors(['selling_price']);
+        $response = $this->putJson('/api/holdings/sold', $data);
+        $response->assertStatus(422); 
+        $response->assertJsonValidationErrors(['price']);
     }
 }

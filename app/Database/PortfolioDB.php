@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
+use Config;
 
 class PortfolioDB 
 {
@@ -34,17 +35,25 @@ class PortfolioDB
             Schema::create('holdings', function ($table) {
                 $table->id();
                 $table->string('instrument')->unique(); 
-                $table->string('instrument_first'); 
-                $table->string('instrument_second'); 
                 $table->decimal('quantity', 60, 9); 
                 $table->decimal('price', 60, 9); 
                 $table->timestamps(); // created_at, updated_at
-                });
+            });
+        }   
+        
+        if (! Schema::hasTable('pnl')) {
+            Schema::create('pnl', function ($table) {
+                $table->id();
+                $table->decimal('value', 25, 2);  
+                $table->timestamps();  
+            });
         }    
+        
     } 
 
     private static function createDatabaseIfNotExists() {
-        $databasePath = env('DB_DATABASE', database_path('database.sqlite'));
+        $databasePath = config('database.connections.sqlite.database', 'crypto_port.sqlite'); 
+        // Log::debug('createDatabaseIfNotExists:' . $databasePath);
    
         if (!File::exists($databasePath)) {
             File::put($databasePath, '');    
